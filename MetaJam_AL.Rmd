@@ -1,0 +1,78 @@
+---
+title: "MetaJam_AL"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(metajam)
+ 
+## Download the data
+pal_url <- "https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-sbc.77.4&entityid=f32823fba432f58f66c06b589b7efac6"
+ 
+pal_lobster_path <- download_d1_data(data_url = pal_url, path = 
+tempdir())
+# Read in data
+pal_files <- read_d1_files(pal_lobster_path)
+pal_data <- pal_files$data
+ 
+# Simplify column names:
+pal_lobster <- pal_data %>%
+  clean_names()
+ 
+# Annual totals by site:
+annual_counts_lobster <- pal_lobster %>% 
+  group_by(site, year) %>% 
+  summarize(total_count = sum(count))
+ 
+ggplot(data = annual_counts_lobster, aes(x = year, y = total_count)) +
+  geom_line(aes(color = site))
+```
+
+```{r}
+pal_url_lightning<- "https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-sev.31998.1&entityid=7b7926c8180e0a804d2e92e347ebe85b"
+
+pal_lightning_path <-  download_d1_data(data_url = pal_url_lightning, path = 
+tempdir())
+# Read in data
+pal_files <- read_d1_files(pal_lightning_path)
+pal_data <- pal_files$data
+ 
+# Simplify column names:
+pal_lightning <- pal_data %>%
+  clean_names()
+ 
+
+
+# Code from https://www.r-graph-gallery.com/2d-density-plot-with-ggplot2.html
+ggplot(pal_lightning, aes(x=longitude, y=latitude) ) +
+  geom_bin2d(bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+```
+
+```{r}
+# https://www.littlemissdata.com/blog/maps
+
+if(!requireNamespace("devtools")) install.packages("devtools")
+devtools::install_github("dkahle/ggmap", ref = "tidyup", force=TRUE)
+
+#Load the library
+library("ggmap")
+
+#Set your API Key
+ggmap::register_google(key = "<API_KEY>")
+p <- ggmap(get_googlemap(center = c(lon = -105.335167, lat = 35),
+                    zoom = 11, scale = 2,
+                    maptype ='terrain',
+                    color = 'color'))
+col1 = "#011f4b"
+p + geom_point(aes(x = longitude, y = latitude), colour = col1, data = pal_lightning, alpha=0.25, size = 0.5) + 
+  theme(legend.position="none")
+```
